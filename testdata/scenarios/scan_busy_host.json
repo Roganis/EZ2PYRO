@@ -1,0 +1,8 @@
+{
+  "name": "Scans on a busy host: scattered 1 ms overruns must not steal the verdict",
+  "duration_s": 600,
+  "link": {"overruns_per_s": 40},
+  "periodic": {"first_s": 30, "every_s": 90, "jitter_s": 3, "dur_ms": 300, "kind": "delay"},
+  "at_each_stall": [{"kind": "event", "event": "scan_start", "offset_ms": -150}],
+  "expect": {"top": "scan", "periodic": true, "min_share": 1}
+}

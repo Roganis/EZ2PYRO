@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}}</title>
+<style>{{.UPlotCSS}}</style>
+<style>{{.StyleCSS}}</style>
+</head>
+<body>
+<main>
+{{- $r := .Run}}{{$s := $r.Summary}}
+<h1>Link Doctor report</h1>
+<p class="sub">{{$r.Options.Mode}} test · {{$r.Started}} · {{f0 $r.DurationS}} s {{with $r.Environment.Server.Hello}}· {{.Hostname}}{{end}}{{with $r.Environment.Controller.Hello}} → {{.Hostname}}{{end}}</p>
+
+{{with .Top}}
+<section class="card verdict" aria-label="Verdict">
+  <div class="label">Most likely cause</div>
+  <div class="cause">
+    {{if eq .Rule "clean"}}<span class="status"><span class="dot" style="background:var(--good)"></span>{{.Cause}}</span>
+    {{else}}{{.Cause}}{{end}}
+  </div>
+  <div class="evidence">{{.Evidence}}{{if and .Total (not .RunLevel)}} — explains {{pct .Share}} of stalls.{{end}}</div>
+  <div class="fix"><b>Suggested fix:</b> {{.Fix}}</div>
+  {{with $.Others}}
+  <ul class="others">
+    {{range .}}<li><b>{{.Cause}}</b>{{if not .RunLevel}} ({{.Explained}} of {{.Total}} stalls){{end}}: {{.Evidence}}. <span class="muted">Fix: {{.Fix}}</span></li>{{end}}
+  </ul>
+  {{end}}
+</section>
+{{end}}
+
+<section class="tiles" aria-label="Key numbers">
+  <div class="card tile"><div class="k">Late frames</div><div class="v">{{f2 $s.LatePct}}%</div><div class="n">{{$s.LateFrames}} of {{$s.Frames}}</div></div>
+  <div class="card tile"><div class="k">Stalls</div><div class="v">{{$s.Stalls}}</div><div class="n">{{f2 $s.StallsPerMin}} per minute</div></div>
+  <div class="card tile"><div class="k">Longest stall</div><div class="v">{{secs $s.LongestStallMs}}</div><div class="n">budget {{f1 $r.Options.BudgetMs}} ms / frame</div></div>
+  <div class="card tile"><div class="k">Periodicity</div>
+    {{with $r.Periodicity}}{{if .Periodic}}<div class="v">{{f0 .PeriodS}} s</div><div class="n">± {{f0 .StdS}} s (CV {{f2 .CV}})</div>
+    {{else if .AutoLagS}}<div class="v">~{{.AutoLagS}} s</div><div class="n">faint pattern (r = {{f2 .AutoCorr}})</div>
+    {{else}}<div class="v">none</div><div class="n">intervals irregular</div>{{end}}
+    {{else}}<div class="v">—</div><div class="n">too few stalls</div>{{end}}
+  </div>
+  {{if $s.RecommendedMbps}}<div class="card tile"><div class="k">Recommended Pyrowave bitrate</div><div class="v">{{f0 $s.RecommendedMbps}}</div><div class="n">Mbit/s (70% of {{f0 $r.Ramp.HighestCleanMbps}} clean)</div></div>{{end}}
+  <div class="card tile"><div class="k">Packet loss</div><div class="v">{{f2 $s.LossPct}}%</div><div class="n">{{$s.PacketsLost}} packets</div></div>
+  <div class="card tile"><div class="k">Frame delay p99</div><div class="v">{{f1 $s.P99DelayMs}} ms</div><div class="n">p50 {{f1 $s.P50DelayMs}} ms</div></div>
+  <div class="card tile"><div class="k">Throughput</div><div class="v">{{f0 $s.MeanMbps}}</div><div class="n">Mbit/s delivered · RTT {{f1 $s.MedianRTTms}} ms</div></div>
+</section>
+
+<h2>Timeline</h2>
+<section class="card chart-card" aria-label="Timeline">
+  <div class="hint">Drag across any chart to zoom all lanes; double-click to reset. Shaded bands are stalls.</div>
+  <div id="readout" aria-live="polite"></div>
+  <div class="lane-title"><b>Frame delay (p99 per 100 ms)</b>
+    <span class="key"><span class="swatch" style="background:var(--series-1)"></span>p99 completion delay</span>
+    <span class="key"><span class="swatch" style="background:var(--text-muted)"></span>late budget (dashed)</span>
+    <span class="key"><span class="swatch" style="background:var(--critical);height:8px;width:3px"></span>incomplete frames</span>
+    <span class="key"><span class="swatch band"></span>stall</span></div>
+  <div id="lane-delay"></div>
+  <div class="lane-title"><b>Throughput per second</b>
+    <span class="key"><span class="swatch" style="background:var(--series-1)"></span>delivered</span>
+    <span class="key"><span class="swatch" style="background:var(--series-2)"></span>target (dashed)</span></div>
+  <div id="lane-tput"></div>
+  {{if .HasLink}}
+  <div class="lane-title"><b>Deck Wi-Fi signal</b></div>
+  <div id="lane-signal"></div>
+  <div class="lane-title"><b>Deck PHY rate</b>
+    <span class="key"><span class="swatch" style="background:var(--series-1)"></span>RX (host → Deck)</span>
+    <span class="key"><span class="swatch" style="background:var(--series-2)"></span>TX</span></div>
+  <div id="lane-phy"></div>
+  <div class="lane-title"><b>Band</b></div>
+  <div id="lane-band"></div>
+  {{else}}
+  <p class="hint">No Wi-Fi link telemetry was recorded on the Deck.</p>
+  {{end}}
+  <div class="lane-title"><b>Wi-Fi events</b>
+    <span class="key"><span class="dot" style="background:var(--series-2)"></span>scan</span>
+    <span class="key"><span class="dot" style="background:var(--series-7)"></span>roam / connect</span>
+    <span class="key"><span class="dot" style="background:var(--series-5)"></span>disconnect</span>
+    <span class="key"><span class="dot" style="background:var(--series-6)"></span>channel change</span></div>
+  <div id="lane-events"></div>
+</section>
+
+{{with $r.Ramp}}
+<h2>Ramp steps</h2>
+<section class="card tablewrap">
+<table>
+  <thead><tr><th class="num">Target</th><th class="num">Delivered</th><th class="num">Late frames</th><th class="num">Loss</th><th class="num">p99 delay</th><th>Result</th></tr></thead>
+  <tbody>
+  {{range .Steps}}<tr><td class="num">{{f0 .BitrateMbps}} Mbit/s</td><td class="num">{{f0 .RecvMbps}} Mbit/s</td><td class="num">{{f2 .LatePct}}%</td><td class="num">{{f2 .LossPct}}%</td><td class="num">{{f1 .P99DelayMs}} ms</td>
+  <td>{{if .Clean}}<span class="status"><span class="dot" style="background:var(--good)"></span>clean</span>{{else}}<span class="status"><span class="dot" style="background:var(--critical)"></span>stutters</span>{{end}}</td></tr>{{end}}
+  </tbody>
+</table>
+<p class="muted">Clean = at most {{/* thresholds */}}1% late frames and 0.5% loss. Highest clean: {{f0 .HighestCleanMbps}} Mbit/s → set Pyrowave to about {{f0 .RecommendedMbps}} Mbit/s.{{if .StoppedEarly}} Stopped after two failing steps.{{end}}</p>
+</section>
+{{end}}
+
+<h2>Stalls ({{len $r.Stalls}})</h2>
+<section class="card tablewrap">
+{{if .Stalls}}
+<table>
+  <thead><tr><th>#</th><th>Time</th><th class="num">Duration</th><th class="num">Worst delay</th><th class="num">Late frames</th><th class="num">Packets lost</th><th>Likely cause</th><th>Telemetry nearby</th></tr></thead>
+  <tbody>
+  {{range .Stalls}}<tr><td>{{.Index}}</td><td>{{clock .Start}}</td><td class="num">{{secs .DurationMs}}</td>
+  <td class="num">{{if ge .WorstDelay 0.0}}{{f1 .WorstDelay}} ms{{else}}lost{{end}}{{if .Gap}} · gap{{end}}</td>
+  <td class="num">{{.LateFrames}}</td><td class="num">{{.PacketsLost}}</td>
+  <td>{{range .Causes}}<span class="pill">{{.}}</span>{{else}}<span class="muted">—</span>{{end}}</td>
+  <td>{{range .Nearby}}<span class="pill">{{.}}</span>{{else}}<span class="muted">none</span>{{end}}</td></tr>{{end}}
+  </tbody>
+</table>
+{{if .MoreStalls}}<p class="muted">{{.MoreStalls}} more stalls are listed in stalls.csv.</p>{{end}}
+{{else}}<p class="muted">No stalls detected.</p>{{end}}
+</section>
+
+<h2>Environment</h2>
+<section class="cols">
+  {{with $r.Environment}}
+  <div class="card"><dl class="env">
+    <dt>Deck (controller)</dt><dd>{{with .Controller.Hello}}{{.Hostname}} · {{.OS}}/{{.Arch}}{{end}}</dd>
+    <dt>Interface</dt><dd>{{.Controller.Iface}} ({{.Controller.IfaceKind}})</dd>
+    {{if .Controller.SSID}}<dt>Network</dt><dd>{{.Controller.SSID}}</dd>{{end}}
+    {{if .Controller.Band}}<dt>Band / channel</dt><dd>{{.Controller.Band}} GHz · channel {{.Controller.Channel}}{{if .Controller.WidthMHz}} · {{.Controller.WidthMHz}} MHz{{end}}</dd>{{end}}
+    <dt>Socket buffer</dt><dd>{{kb .RcvBufBytes}}</dd>
+    <dt>Telemetry</dt><dd>{{with .Controller.Hello}}{{join .Telemetry ", "}}{{end}}</dd>
+  </dl></div>
+  <div class="card"><dl class="env">
+    <dt>Host (sender)</dt><dd>{{with .Server.Hello}}{{.Hostname}} · {{.OS}}/{{.Arch}}{{end}}</dd>
+    <dt>Address</dt><dd>{{.Peer}}</dd>
+    <dt>Interface</dt><dd>{{.Server.Iface}} ({{.Server.IfaceKind}})</dd>
+    <dt>Clock offset</dt><dd>{{f1 .ClockOffsetMs}} ms (host − Deck)</dd>
+    <dt>Telemetry</dt><dd>{{with .Server.Hello}}{{join .Telemetry ", "}}{{end}}</dd>
+    {{range .Warnings}}<dt>Warning</dt><dd>{{.}}</dd>{{end}}
+  </dl></div>
+  {{end}}
+  <div class="card"><dl class="env">
+    {{with $r.Options}}
+    <dt>Mode</dt><dd>{{.Mode}}</dd>
+    <dt>Bitrate</dt><dd>{{if eq .Mode "ramp"}}{{f0 .RampStart}} → {{f0 .RampStop}} by {{f0 .RampStep}} Mbit/s, {{f0 .StepS}} s per step{{else}}{{f0 .BitrateMbps}} Mbit/s{{end}}</dd>
+    <dt>Frames</dt><dd>{{.FPS}} fps · jitter ±{{pct .FrameJitter}} · burst spread {{pct .BurstSpread}}</dd>
+    <dt>Packets</dt><dd>{{.PktSize}} B · profile {{.Profile}}</dd>
+    <dt>Late budget</dt><dd>{{f1 .BudgetMs}} ms</dd>
+    {{end}}
+    <dt>Tool</dt><dd>{{$r.Tool}} {{$r.Version}}</dd>
+  </dl></div>
+</section>
+
+<footer>Raw data next to this file: run.json, frames.csv, seconds.csv, stalls.csv, telemetry.jsonl. Charts: uPlot (MIT).</footer>
+</main>
+<script>{{.UPlotJS}}</script>
+<script>window.LD_DATA = {{.Data}}; window.LD_EVENT_CATS = {{.EventCats}};</script>
+<script>{{.ChartJS}}</script>
+</body>
+</html>

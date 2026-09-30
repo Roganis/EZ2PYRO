@@ -1,0 +1,8 @@
+{
+  "name": "Soak at 250 Mbit/s on a 300 Mbit/s PHY",
+  "duration_s": 300,
+  "bitrate_mbps": 250,
+  "link": {"rx_mbps": 300},
+  "stalls": [{"at_s": 33, "dur_ms": 300}, {"at_s": 97, "dur_ms": 250}, {"at_s": 170, "dur_ms": 400}, {"at_s": 230, "dur_ms": 200}],
+  "expect": {"top": "capacity", "stalls": 4, "min_share": 1}
+}

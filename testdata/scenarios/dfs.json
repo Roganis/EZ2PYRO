@@ -1,0 +1,8 @@
+{
+  "name": "DFS radar channel change with a 45 s outage",
+  "duration_s": 300,
+  "link": {"freq_mhz": 5500},
+  "stalls": [{"at_s": 100, "dur_ms": 45000, "kind": "gap"}],
+  "at_each_stall": [{"kind": "event", "event": "disconnect", "offset_ms": -100}, {"kind": "freq", "offset_ms": 44000, "freq_mhz": 5180}],
+  "expect": {"top": "dfs", "stalls": 1, "min_share": 1}
+}

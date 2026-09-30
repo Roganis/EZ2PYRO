@@ -1,0 +1,7 @@
+{
+  "name": "Retry spikes with steady signal",
+  "duration_s": 300,
+  "stalls": [{"at_s": 45, "dur_ms": 700}, {"at_s": 150, "dur_ms": 500}, {"at_s": 250, "dur_ms": 600}],
+  "at_each_stall": [{"kind": "retries", "offset_ms": -300, "value": 600}],
+  "expect": {"top": "congestion", "stalls": 3, "min_share": 1}
+}

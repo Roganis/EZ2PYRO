@@ -1,0 +1,7 @@
+{
+  "name": "Freebox Player pulls traffic during stalls",
+  "duration_s": 300,
+  "stalls": [{"at_s": 30, "dur_ms": 900}, {"at_s": 110, "dur_ms": 700}, {"at_s": 200, "dur_ms": 800}],
+  "at_each_stall": [{"kind": "router", "offset_ms": -500, "value": 40, "who": "Freebox Player"}],
+  "expect": {"top": "congestion", "stalls": 3, "min_share": 1}
+}

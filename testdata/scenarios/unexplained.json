@@ -1,0 +1,7 @@
+{
+  "name": "Stalls without any telemetry",
+  "duration_s": 300,
+  "link": {"no_telemetry": true},
+  "stalls": [{"at_s": 30, "dur_ms": 300}, {"at_s": 200, "dur_ms": 300}],
+  "expect": {"top": "unexplained", "stalls": 2, "min_share": 1}
+}

@@ -1,0 +1,7 @@
+{
+  "name": "Host falls behind (sender overruns)",
+  "duration_s": 300,
+  "stalls": [{"at_s": 70, "dur_ms": 400}, {"at_s": 190, "dur_ms": 300}],
+  "at_each_stall": [{"kind": "overruns", "offset_ms": 0, "value": 400}, {"kind": "cpu", "offset_ms": 0, "value": 97}],
+  "expect": {"top": "host", "stalls": 2, "min_share": 1}
+}

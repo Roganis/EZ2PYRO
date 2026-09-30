@@ -1,0 +1,7 @@
+{
+  "name": "Signal drops (someone walks between Deck and box)",
+  "duration_s": 300,
+  "stalls": [{"at_s": 50, "dur_ms": 800}, {"at_s": 130, "dur_ms": 600}, {"at_s": 240, "dur_ms": 900}],
+  "at_each_stall": [{"kind": "signal", "offset_ms": -500, "value": -72}],
+  "expect": {"top": "signal", "stalls": 3, "min_share": 1}
+}

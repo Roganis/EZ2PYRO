@@ -1,0 +1,8 @@
+{
+  "name": "Band steering to 2.4 GHz",
+  "duration_s": 300,
+  "link": {"freq_mhz": 5500},
+  "stalls": [{"at_s": 60, "dur_ms": 1500, "kind": "loss"}, {"at_s": 180, "dur_ms": 1200, "kind": "loss"}],
+  "at_each_stall": [{"kind": "band", "offset_ms": 0, "freq_mhz": 2437}],
+  "expect": {"top": "band", "stalls": 2, "min_share": 1}
+}

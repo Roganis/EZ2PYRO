@@ -1,0 +1,5 @@
+{
+  "name": "Clean link",
+  "duration_s": 300,
+  "expect": {"top": "clean", "stalls": 0}
+}
