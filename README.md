@@ -8,7 +8,7 @@ It answers three questions:
 2. When do stalls happen, and do they repeat at a regular interval? (`--mode soak`)
 3. What is the most likely cause of each stall, and what is the evidence?
 
-The design is in [docs/architecture.md](docs/architecture.md).
+**New here? Read the [user guide](docs/user-guide.md)**: setup on Windows and the Deck, each test mode, how to read the report, and what to do about each cause. The design is in [docs/architecture.md](docs/architecture.md).
 
 ## Quick start
 

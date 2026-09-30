@@ -130,7 +130,7 @@ func cmdRun(args []string) error {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
 	var p ports
 	p.register(fs)
-	peer := fs.String("peer", "", "IP address of the host running `linkdoctor serve` (required)")
+	peer := fs.String("peer", "", "`ip` address of the host running \"linkdoctor serve\" (required)")
 	mode := fs.String("mode", "soak", "test mode: soak, ramp or live")
 	bitrate := fs.Float64("bitrate", 150, "average bitrate in Mbit/s (10–1000)")
 	fps := fs.Int("fps", 60, "frame rate (30–144)")
