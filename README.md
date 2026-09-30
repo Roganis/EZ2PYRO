@@ -18,6 +18,10 @@ Build (Go 1.25+, no cgo):
 make dist      # dist/linkdoctor-linux-amd64, dist/linkdoctor-windows-amd64.exe
 ```
 
+**Prefer clicking to typing?** Double-click the program (or run `linkdoctor gui`) on both machines. A simple interface opens in your browser: click *Start hosting* on the PC; on the Deck enter the PC's address, pick *Best bitrate*, *Stutter hunt* or *Live monitor*, and press *Start test*. See [the user guide](docs/user-guide.md#4-the-easy-way-the-point-and-click-interface).
+
+From the command line:
+
 **On the host** (Windows 10/11 or Linux PC, ideally wired to the Freebox):
 
 ```
@@ -93,4 +97,4 @@ make test-short  # skip the traffic tests
 
 `testdata/scenarios/*.json` holds synthetic runs, one or more per diagnosis rule. `internal/analysis` must reach the expected verdict for each of them. To add a new pattern, add a rule row and a scenario.
 
-Layout: `cmd/linkdoctor` (CLI), `internal/proto` (wire formats), `internal/clock` (pacing and clock offset), `internal/sender`, `internal/receiver`, `internal/agent` (serve / controller), `internal/telemetry`, `internal/router/freebox`, `internal/modes`, `internal/analysis`, `internal/report`.
+Layout: `cmd/linkdoctor` (CLI), `internal/gui` (local web interface), `internal/proto` (wire formats), `internal/clock` (pacing and clock offset), `internal/sender`, `internal/receiver`, `internal/agent` (serve / controller), `internal/telemetry`, `internal/router/freebox`, `internal/modes`, `internal/analysis`, `internal/report`.

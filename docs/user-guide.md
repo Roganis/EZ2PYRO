@@ -5,20 +5,21 @@ This guide explains how to use `linkdoctor` to find out why a Steam Remote Play 
 - [1. How it works in one minute](#1-how-it-works-in-one-minute)
 - [2. What you need](#2-what-you-need)
 - [3. Get the program](#3-get-the-program)
-- [4. Set up the host (your PC)](#4-set-up-the-host-your-pc)
-- [5. Set up the Deck](#5-set-up-the-deck)
-- [6. Your first test: find a good bitrate (ramp)](#6-your-first-test-find-a-good-bitrate-ramp)
-- [7. Hunt the stutters (soak)](#7-hunt-the-stutters-soak)
-- [8. Watch the link live (live)](#8-watch-the-link-live-live)
-- [9. Read the report](#9-read-the-report)
-- [10. Causes and what to do about them](#10-causes-and-what-to-do-about-them)
-- [11. Check a fix: before/after (compare)](#11-check-a-fix-beforeafter-compare)
-- [12. Re-analyse a saved run (analyze)](#12-re-analyse-a-saved-run-analyze)
-- [13. Optional: Freebox module](#13-optional-freebox-module)
-- [14. Command reference](#14-command-reference)
-- [15. Output files](#15-output-files)
-- [16. Troubleshooting](#16-troubleshooting)
-- [17. Tips for trustworthy results](#17-tips-for-trustworthy-results)
+- [4. The easy way: the point-and-click interface](#4-the-easy-way-the-point-and-click-interface)
+- [5. Set up the host (your PC)](#5-set-up-the-host-your-pc)
+- [6. Set up the Deck](#6-set-up-the-deck)
+- [7. Your first test: find a good bitrate (ramp)](#7-your-first-test-find-a-good-bitrate-ramp)
+- [8. Hunt the stutters (soak)](#8-hunt-the-stutters-soak)
+- [9. Watch the link live (live)](#9-watch-the-link-live-live)
+- [10. Read the report](#10-read-the-report)
+- [11. Causes and what to do about them](#11-causes-and-what-to-do-about-them)
+- [12. Check a fix: before/after (compare)](#12-check-a-fix-beforeafter-compare)
+- [13. Re-analyse a saved run (analyze)](#13-re-analyse-a-saved-run-analyze)
+- [14. Optional: Freebox module](#14-optional-freebox-module)
+- [15. Command reference](#15-command-reference)
+- [16. Output files](#16-output-files)
+- [17. Troubleshooting](#17-troubleshooting)
+- [18. Tips for trustworthy results](#18-tips-for-trustworthy-results)
 
 ---
 
@@ -78,7 +79,48 @@ Check that it works:
 linkdoctor version
 ```
 
-## 4. Set up the host (your PC)
+## 4. The easy way: the point-and-click interface
+
+If you'd rather not type commands, linkdoctor has a simple interface that opens in your web browser. It is part of the same file; there is nothing extra to install, and it only listens on your own machine (`127.0.0.1`).
+
+**Start it** by double-clicking the program, or with:
+
+```
+linkdoctor gui
+```
+
+A small window (Windows: a console window; Deck: Konsole, if you started it from there) shows the address, and your browser opens it. **Keep that window open** while you use the interface; close it to quit.
+
+On the Deck in Desktop Mode, you can also start it from Dolphin: right-click `linkdoctor` → *Run in Konsole* (or double-click it if Dolphin offers to run it).
+
+The interface has three tabs:
+
+**Host** (use it on the gaming PC)
+1. Click **Start hosting**. Allow the firewall prompt on Windows the first time (tick *Private networks*).
+2. The PC's address is shown in large type, for example `192.168.1.20`. You'll type it on the Deck.
+3. Leave it running. The *Activity* box shows when the Deck connects and tests.
+
+**Test** (use it on the Deck)
+1. Type the PC's address in **Host PC address** (it is remembered next time).
+2. Pick what you want to find out:
+   - **Best bitrate** runs the [ramp test](#7-your-first-test-find-a-good-bitrate-ramp) (2–4 minutes) and tells you which bitrate to set in Pyrowave.
+   - **Stutter hunt** runs a [soak test](#8-hunt-the-stutters-soak) at the bitrate and duration you choose.
+   - **Live monitor** shows the link [second by second](#9-watch-the-link-live-live) until you press Stop.
+3. Press **Start test**. While it runs you see throughput, late frames, packet loss, frame delay, round-trip time, a small throughput chart (red marks are stalls) and, for Best bitrate, a table of the steps done so far.
+4. **Stop and write report** ends the test early and still produces the report.
+5. When it finishes, the result shows the most likely cause, the evidence and **what to do**, plus the key numbers. **Open full report** opens the detailed [report](#10-read-the-report).
+
+Under *Advanced* you can change the frame rate, the late threshold, the packet size, and turn on the [Freebox module](#14-optional-freebox-module).
+
+**Results** lists every test in the results folder (its location is shown at the top). **Open** shows a report. Tick two tests (for example before and after a change) and press **Compare selected** to open a [side-by-side comparison](#12-check-a-fix-beforeafter-compare).
+
+You can use the host and the test on the same machine, for example to try the interface: start hosting, then test against `127.0.0.1`. That only checks the program, not your Wi-Fi.
+
+Options for `linkdoctor gui`: `--out <folder>` (where results are saved, default `runs` next to where you started it), `--no-browser` (just print the address), `--addr` (listening address; keep it on `127.0.0.1`).
+
+Everything below describes the command-line way. It does the same things, and the rest of this guide (reading the report, causes and fixes, troubleshooting) applies to both.
+
+## 5. Set up the host (your PC)
 
 ### Windows
 
@@ -111,7 +153,7 @@ chmod +x linkdoctor-linux-amd64
 
 If a firewall is active (for example `ufw` or `firewalld`), allow TCP 47100 and UDP 47101–47102 from your LAN.
 
-## 5. Set up the Deck
+## 6. Set up the Deck
 
 1. Switch to **Desktop Mode**: press the Steam button, then *Power* → *Switch to Desktop*.
 2. Copy `linkdoctor-linux-amd64` to your home folder (`/home/deck`). You can use a USB stick or download it with the browser; then move it from `Downloads` to your home folder.
@@ -136,7 +178,7 @@ Tips for the Deck:
 - Stay where you normally play. The test only tells you about the spot you test from.
 - Results go into `~/runs/`. Open the `report.html` files with the Deck's browser (Dolphin → double-click).
 
-## 6. Your first test: find a good bitrate (ramp)
+## 7. Your first test: find a good bitrate (ramp)
 
 The **ramp** test raises the bitrate step by step until the link starts to stutter. It tells you which bitrate to set in Pyrowave.
 
@@ -180,7 +222,7 @@ Useful ramp options:
 
 For a finer result near the limit, try `--ramp-start 150 --ramp-stop 300 --ramp-step 10 --step-duration 20s`.
 
-## 7. Hunt the stutters (soak)
+## 8. Hunt the stutters (soak)
 
 If the stream drops "every few minutes", run a **soak** test: a fixed bitrate for a long time. This is the mode that catches periodic problems.
 
@@ -206,7 +248,7 @@ verdict: Background Wi-Fi scanning
 report: runs/2026-09-30_2100/report.html
 ```
 
-## 8. Watch the link live (live)
+## 9. Watch the link live (live)
 
 The **live** mode runs until you press Ctrl+C and prints one line per second. Use it to try things in real time: walking around, moving the Deck, starting a download on another device, or changing a router setting.
 
@@ -232,7 +274,7 @@ The **live** mode runs until you press Ctrl+C and prints one line per second. Us
 
 Live mode does not write a report unless you add `--report`.
 
-## 9. Read the report
+## 10. Read the report
 
 Open `report.html` from the run folder in any browser. It works offline and is a single file, so you can attach it to a forum post as it is.
 
@@ -243,7 +285,7 @@ The top box states the **most likely cause** in one sentence, the **evidence** (
 Special verdicts:
 
 - **No stalls detected**: the link was clean at this bitrate.
-- **Unexplained stalls**: stalls happened, but no telemetry event lined up with them. Run longer, try the [Freebox module](#13-optional-freebox-module) and look at other devices on the network.
+- **Unexplained stalls**: stalls happened, but no telemetry event lined up with them. Run longer, try the [Freebox module](#14-optional-freebox-module) and look at other devices on the network.
 
 ### Key numbers
 
@@ -279,11 +321,11 @@ One row per stall: time since the start, duration, worst delay ("lost" if frames
 
 This section shows the devices, operating systems, network interface, Wi-Fi network name, band, channel and width, socket buffer size, clock offset, test parameters and any warnings. Check it when comparing runs, to make sure you compared like with like.
 
-## 10. Causes and what to do about them
+## 11. Causes and what to do about them
 
 | Verdict | What it means | What to try |
 | --- | --- | --- |
-| **Background Wi-Fi scanning** | The Deck periodically scans for other networks, pausing traffic for a fraction of a second. It is often periodic (every 30–120 s). | In Game Mode: *Settings → System* → enable *Developer Mode*, then *Settings → Developer* → turn off **Wi-Fi power management**. Forget saved networks you don't use. Then run a soak again and [compare](#11-check-a-fix-beforeafter-compare). |
+| **Background Wi-Fi scanning** | The Deck periodically scans for other networks, pausing traffic for a fraction of a second. It is often periodic (every 30–120 s). | In Game Mode: *Settings → System* → enable *Developer Mode*, then *Settings → Developer* → turn off **Wi-Fi power management**. Forget saved networks you don't use. Then run a soak again and [compare](#12-check-a-fix-beforeafter-compare). |
 | **Wi-Fi power saving** | Many short stalls while the radio's power saving is on. | Turn off Wi-Fi power management as above. In Desktop Mode you can test it temporarily with `sudo iw dev wlan0 set power_save off`; this resets at reboot. |
 | **Band steering** | The router moves the Deck to 2.4 GHz around the stalls. | Give the 2.4 GHz and 5 GHz networks different names in the router settings and connect the Deck only to the 5 GHz one. |
 | **DFS radar channel change** | The router changed channel (it must leave DFS channels when it detects radar), often with a 30–60 s disconnect. | Set a fixed non-DFS 5 GHz channel on the router: 36, 40, 44 or 48. |
@@ -295,7 +337,7 @@ This section shows the devices, operating systems, network interface, Wi-Fi netw
 
 A stall can have several causes. The report ranks causes by the share of stalls each one explains.
 
-## 11. Check a fix: before/after (compare)
+## 12. Check a fix: before/after (compare)
 
 The best way to know whether a change helped is to run the same test before and after it, then compare the two runs.
 
@@ -310,7 +352,7 @@ The best way to know whether a change helped is to run the same test before and 
 
 The terminal shows each key number for run A and run B with the change. The command also writes `compare.html` into the second folder, with the table, both verdicts, and late frames and p99 delay over time for both runs on the same charts. Use `--out file.html` to save it elsewhere.
 
-## 12. Re-analyse a saved run (analyze)
+## 13. Re-analyse a saved run (analyze)
 
 `analyze` re-runs the analysis on a saved run folder and rewrites its report. Use it after updating linkdoctor (newer versions may explain more), or to try a different late budget:
 
@@ -321,7 +363,7 @@ The terminal shows each key number for run A and run B with the change. The comm
 
 `--budget` is the delay in milliseconds after which a frame counts as late. The default is one frame interval (16.7 ms at 60 fps). If Pyrowave on your setup buffers more than one frame, a larger budget may match what you actually see.
 
-## 13. Optional: Freebox module
+## 14. Optional: Freebox module
 
 If your router is a Freebox, linkdoctor can also read the box's side of the story: its Wi-Fi channel and how much traffic other Wi-Fi devices use during stalls. This adds evidence such as "the Freebox Player pulled 40 Mbit/s during 9 of 11 stalls" or a channel change on the box. The module is **read-only**: it never changes settings.
 
@@ -341,7 +383,7 @@ Use `--freebox-url` if your box is not reachable as `mafreebox.freebox.fr`.
 
 > This module was built from the public Freebox OS API documentation and tested against a simulated box, not a real one yet. If it fails, the test still runs; you only lose the router data, and a warning is printed.
 
-## 14. Command reference
+## 15. Command reference
 
 ### `linkdoctor serve` (host)
 
@@ -377,11 +419,11 @@ The server handles one Deck at a time. If a second Deck connects, it is told the
 | `--report` | off | Live mode: also write a report when stopped |
 | `--json` | off | Print the summary as JSON on stdout (progress goes to stderr) |
 | `--raw` | off | Also save every packet to `packets.csv`. Use only for short runs: a minute at 300 Mbit/s is about 2 million lines. |
-| `--freebox`, `--freebox-url` | off | [Freebox module](#13-optional-freebox-module) |
+| `--freebox`, `--freebox-url` | off | [Freebox module](#14-optional-freebox-module) |
 | `--iface`, `--wifi-iface` | auto | Override interface detection |
 | `--no-telemetry` | off | Don't collect telemetry on the Deck |
 | `--port`, `--data-port`, `--probe-port` | 47100–47102 | Must match the server |
-| `--loopback` | off | Self-test on one machine (see [Troubleshooting](#16-troubleshooting)) |
+| `--loopback` | off | Self-test on one machine (see [Troubleshooting](#17-troubleshooting)) |
 
 ### `linkdoctor analyze <run folder>`
 
@@ -395,7 +437,7 @@ Options: `--out <file.html>`.
 
 Prints the version. Use the same version on the host and the Deck: different protocol versions refuse to connect.
 
-## 15. Output files
+## 16. Output files
 
 Each `run` creates `runs/<date>_<time>/` (a suffix `_2`, `_3`… is added if the folder already exists):
 
@@ -434,7 +476,7 @@ The files open in any spreadsheet or in Python/pandas. For scripts, `--json` pri
 ./linkdoctor run --peer 192.168.1.20 --mode ramp --json > ramp.json
 ```
 
-## 16. Troubleshooting
+## 17. Troubleshooting
 
 **`cannot reach linkdoctor serve on 192.168.1.20:47100`**
 - Is `serve` still running on the host?
@@ -478,7 +520,7 @@ This starts a server inside the same process and tests over `127.0.0.1`. The res
 **Stopping**
 Ctrl+C once stops the test cleanly and writes the report. Ctrl+C twice quits at once.
 
-## 17. Tips for trustworthy results
+## 18. Tips for trustworthy results
 
 - **Test alone.** Pause downloads, streaming and backups on other devices, and close Steam's own streaming. The report can only blame what it sees.
 - **Change one thing at a time**, and compare runs with the same bitrate, duration and location.

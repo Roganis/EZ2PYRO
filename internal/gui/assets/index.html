@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Link Doctor</title>
+<link rel="stylesheet" href="/assets/app.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="logo" aria-hidden="true"></span><div><h1>Link Doctor</h1><div class="muted small" id="whoami"></div></div></div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-tab="test" id="tab-test">Test <span class="muted small">on the Deck</span></button>
+    <button role="tab" data-tab="host" id="tab-host">Host <span class="muted small">on the PC</span></button>
+    <button role="tab" data-tab="results" id="tab-results">Results</button>
+  </nav>
+</header>
+
+<main>
+<!-- TEST -->
+<section id="panel-test" class="panel" role="tabpanel">
+
+  <div id="test-form">
+    <div class="card">
+      <h2><span class="step">1</span> Host PC address</h2>
+      <p class="muted">Start <b>Host</b> on your gaming PC first; its address is shown there.</p>
+      <input id="peer" class="big mono" placeholder="192.168.1.20" autocomplete="off" spellcheck="false" inputmode="decimal">
+    </div>
+
+    <div class="card">
+      <h2><span class="step">2</span> What do you want to find out?</h2>
+      <div class="choices" role="radiogroup">
+        <label class="choice"><input type="radio" name="mode" value="ramp" checked>
+          <b>Best bitrate</b><span class="muted">Steps the bitrate up until it stutters and tells you what to set in Pyrowave. 2–4 minutes.</span></label>
+        <label class="choice"><input type="radio" name="mode" value="soak">
+          <b>Stutter hunt</b><span class="muted">Streams at a fixed bitrate for a while and explains every stall. Best for “drops every few minutes”.</span></label>
+        <label class="choice"><input type="radio" name="mode" value="live">
+          <b>Live monitor</b><span class="muted">Watch the link second by second while you move around or change settings.</span></label>
+      </div>
+      <div class="row" id="opt-bitrate">
+        <label>Bitrate <span class="unit-input"><input id="bitrate" type="number" min="10" max="1000" step="5" value="150"><span>Mbit/s</span></span></label>
+        <label id="opt-duration">Duration
+          <select id="duration">
+            <option value="5">5 minutes</option><option value="10">10 minutes</option>
+            <option value="30" selected>30 minutes</option><option value="60">1 hour</option>
+          </select></label>
+      </div>
+      <details class="adv">
+        <summary>Advanced</summary>
+        <div class="row">
+          <label>Frame rate <select id="fps"><option>30</option><option selected>60</option><option>90</option><option>120</option></select></label>
+          <label>Late after <span class="unit-input"><input id="budget" type="number" min="0" step="1" placeholder="auto"><span>ms</span></span></label>
+          <label>Packet size <span class="unit-input"><input id="pkt" type="number" min="200" max="1472" value="1200"><span>bytes</span></span></label>
+        </div>
+        <label class="check"><input type="checkbox" id="freebox"> Also read the Freebox (first time: approve on the box's display)</label>
+      </details>
+    </div>
+
+    <div id="form-error" class="alert" hidden></div>
+    <button id="start" class="primary big">Start test</button>
+  </div>
+
+  <div id="test-run" hidden>
+    <div class="card">
+      <div class="run-head">
+        <div><div class="label" id="run-label">Running</div><h2 id="run-title"></h2></div>
+        <button id="stop" class="danger">Stop and write report</button>
+      </div>
+      <div class="bar" id="bar-wrap"><div id="bar"></div></div>
+      <div class="muted small" id="run-time"></div>
+      <div class="tiles">
+        <div class="tile"><div class="k">Throughput</div><div class="v" id="t-mbps">—</div><div class="n" id="t-target"></div></div>
+        <div class="tile"><div class="k">Late frames (last s)</div><div class="v" id="t-late">—</div><div class="n" id="t-late-total"></div></div>
+        <div class="tile"><div class="k">Packet loss</div><div class="v" id="t-loss">—</div></div>
+        <div class="tile"><div class="k">Frame delay p99</div><div class="v" id="t-p99">—</div></div>
+        <div class="tile"><div class="k">Round trip</div><div class="v" id="t-rtt">—</div></div>
+        <div class="tile"><div class="k">Stalls seen</div><div class="v" id="t-stalls">0</div></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="legend small"><span class="key"><span class="sw s1"></span>received Mbit/s</span><span class="key"><span class="sw dash"></span>target</span><span class="key"><span class="sw crit"></span>stall</span></div>
+        <canvas id="chart" height="150" aria-label="Throughput over time"></canvas>
+      </div>
+      <div id="steps-wrap" hidden>
+        <h3>Ramp steps</h3>
+        <table><thead><tr><th class="num">Target</th><th class="num">Delivered</th><th class="num">Late</th><th class="num">Loss</th><th>Result</th></tr></thead><tbody id="steps"></tbody></table>
+      </div>
+      <details class="log"><summary>Details</summary><pre id="test-log"></pre></details>
+    </div>
+  </div>
+
+  <div id="test-done" hidden>
+    <div class="card verdict" id="verdict"></div>
+    <div class="tiles" id="done-tiles"></div>
+    <div id="done-warn"></div>
+    <div class="actions">
+      <a class="button primary" id="open-report" target="_blank" rel="noopener">Open full report</a>
+      <button id="again">New test</button>
+    </div>
+  </div>
+
+  <div id="test-error" hidden>
+    <div class="alert"><b>The test could not run.</b><div id="err-text"></div></div>
+    <details class="log" open><summary>Details</summary><pre id="err-log"></pre></details>
+    <div class="actions"><button id="err-back" class="primary">Back</button></div>
+  </div>
+</section>
+
+<!-- HOST -->
+<section id="panel-host" class="panel" role="tabpanel" hidden>
+  <div class="card host-card">
+    <div class="status"><span class="dot" id="host-dot"></span><span id="host-status">Not hosting</span></div>
+    <p class="muted">Run this on the gaming PC. It waits for the Deck and sends the test traffic when asked. Keep this window open while testing.</p>
+    <button id="host-toggle" class="primary big">Start hosting</button>
+    <div id="host-addrs" hidden>
+      <p>On the Deck, enter this address:</p>
+      <div id="addr-list"></div>
+    </div>
+    <div id="host-error" class="alert" hidden></div>
+    <p class="muted small">Windows asks once whether to allow linkdoctor through the firewall: tick <b>Private networks</b> and click <b>Allow</b>.</p>
+  </div>
+  <details class="log" open><summary>Activity</summary><pre id="host-log"></pre></details>
+</section>
+
+<!-- RESULTS -->
+<section id="panel-results" class="panel" role="tabpanel" hidden>
+  <div class="card">
+    <div class="run-head">
+      <div><h2>Past tests</h2><div class="muted small" id="outdir"></div></div>
+      <button id="compare" disabled>Compare selected</button>
+    </div>
+    <p class="muted small">Tick two tests (for example before and after a change) and press Compare.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th></th><th>When</th><th>Test</th><th class="num">Late frames</th><th class="num">Stalls</th><th>Most likely cause</th><th></th></tr></thead>
+      <tbody id="runs"></tbody>
+    </table></div>
+    <p id="runs-empty" class="muted" hidden>No tests yet.</p>
+  </div>
+</section>
+</main>
+<script src="/assets/app.js"></script>
+</body>
+</html>

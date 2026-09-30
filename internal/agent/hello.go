@@ -67,3 +67,22 @@ func UsedIface(h *proto.Hello) (string, string) {
 	}
 	return "", ""
 }
+
+// LocalAddrs returns this machine's private IPv4 addresses: the ones to
+// give to the Deck as --peer.
+func LocalAddrs() []string {
+	var out []string
+	ifs, _ := net.Interfaces()
+	for _, ifc := range ifs {
+		if ifc.Flags&net.FlagUp == 0 || ifc.Flags&net.FlagLoopback != 0 {
+			continue
+		}
+		addrs, _ := ifc.Addrs()
+		for _, a := range addrs {
+			if n, ok := a.(*net.IPNet); ok && n.IP.To4() != nil && n.IP.IsPrivate() {
+				out = append(out, n.IP.String())
+			}
+		}
+	}
+	return out
+}

@@ -12,6 +12,7 @@ Pyrowave Link Doctor. It is one Go binary (`cmd/linkdoctor`) that runs on both e
 - The sender counts overruns (packets > 1 ms late) so a slow host is never blamed on the network. `clock.SleepUntil` sleeps, then spin-waits, with an adaptive margin.
 - Every telemetry field is optional (`telemetry.Sample` uses pointer fields). Chips differ.
 - The diagnosis rules are data (`internal/analysis/rules.go`). Every rule needs a scenario in `testdata/scenarios/` that makes it the top verdict (`TestScenarios` enforces this).
+- The GUI (`internal/gui`, `linkdoctor gui` or no arguments) is a local web app, not a native toolkit, because native Go GUIs need cgo. It binds 127.0.0.1 only, checks the Host header, and requires the session token (`X-Token`) on every `/api/*` call. It drives the same `modes.Execute` / `agent.Listen` code as the CLI, via `modes.Options.OnProgress` / `OnStep`.
 - The report is a single offline HTML file. uPlot and all data are inlined via `embed`. Colours are CSS tokens with light and dark themes.
 
 ## Commands

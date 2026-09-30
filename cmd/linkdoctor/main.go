@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/roganis/ez2pyro/internal/agent"
+	"github.com/roganis/ez2pyro/internal/gui"
 	"github.com/roganis/ez2pyro/internal/modes"
 	"github.com/roganis/ez2pyro/internal/proto"
 	"github.com/roganis/ez2pyro/internal/router/freebox"
@@ -26,6 +27,8 @@ import (
 const usage = `linkdoctor — find out why your Remote Play / Pyrowave stream stutters
 
 Usage:
+  linkdoctor                                 opens the GUI in your browser (same as "gui")
+  linkdoctor gui     [flags]                 simple point-and-click interface
   linkdoctor serve   [flags]                 on the host (Windows or Linux PC)
   linkdoctor run     --peer <host-ip> [flags] on the Deck; starts a test
   linkdoctor analyze <run folder> [--budget ms]
@@ -43,12 +46,18 @@ Run "linkdoctor <command> -h" for the flags of a command.
 
 func main() {
 	log.SetFlags(log.Ltime)
-	if len(os.Args) < 2 {
-		fmt.Fprint(os.Stderr, usage)
-		os.Exit(2)
-	}
 	var err error
+	if len(os.Args) < 2 {
+		// Double-clicked (or run without arguments): open the GUI.
+		if err = cmdGUI(nil); err != nil {
+			fmt.Fprintln(os.Stderr, "error:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	switch os.Args[1] {
+	case "gui":
+		err = cmdGUI(os.Args[2:])
 	case "serve":
 		err = cmdServe(os.Args[2:])
 	case "run":
@@ -101,29 +110,12 @@ func cmdServe(args []string) error {
 		return fmt.Errorf("cannot listen: %w", err)
 	}
 	log.Printf("linkdoctor %s serving on TCP %d, UDP %d/%d", agent.Version, p.control, p.data, p.probe)
-	for _, a := range localAddrs() {
+	for _, a := range agent.LocalAddrs() {
 		log.Printf("  on the Deck run: linkdoctor run --peer %s", a)
 	}
 	ctx, cancel := modes.SignalContext()
 	defer cancel()
 	return srv.Serve(ctx)
-}
-
-func localAddrs() []string {
-	var out []string
-	ifs, _ := net.Interfaces()
-	for _, ifc := range ifs {
-		if ifc.Flags&net.FlagUp == 0 || ifc.Flags&net.FlagLoopback != 0 {
-			continue
-		}
-		addrs, _ := ifc.Addrs()
-		for _, a := range addrs {
-			if n, ok := a.(*net.IPNet); ok && n.IP.To4() != nil && n.IP.IsPrivate() {
-				out = append(out, n.IP.String())
-			}
-		}
-	}
-	return out
 }
 
 func cmdRun(args []string) error {
@@ -241,6 +233,33 @@ func wifiMACs(prefer string) []string {
 		}
 	}
 	return out
+}
+
+func cmdGUI(args []string) error {
+	fs := flag.NewFlagSet("gui", flag.ContinueOnError)
+	addr := fs.String("addr", "127.0.0.1:0", "address for the local web interface (keep it on 127.0.0.1)")
+	out := fs.String("out", "runs", "folder for run results")
+	noBrowser := fs.Bool("no-browser", false, "don't open a browser; just print the address")
+	if err := fs.Parse(args); err != nil {
+		return err
+	}
+	app, err := gui.New(gui.Options{Addr: *addr, OutDir: *out})
+	if err != nil {
+		return err
+	}
+	url := app.URL()
+	fmt.Printf("Link Doctor %s is running at:\n\n    %s\n\n", agent.Version, url)
+	if *noBrowser {
+		fmt.Println("Open that address in a browser on this machine.")
+	} else if err := gui.OpenBrowser(url); err != nil {
+		fmt.Println("Could not open a browser automatically; open the address above yourself.")
+	} else {
+		fmt.Println("Your browser should open now. If not, open the address above.")
+	}
+	fmt.Println("Keep this window open while you use Link Doctor. Close it (or press Ctrl+C) to quit.")
+	ctx, cancel := modes.SignalContext()
+	defer cancel()
+	return app.Serve(ctx)
 }
 
 func cmdAnalyze(args []string) error {

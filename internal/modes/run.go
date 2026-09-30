@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/roganis/ez2pyro/internal/agent"
@@ -43,6 +45,10 @@ type Options struct {
 	LiveReport bool   // live mode: also write a report at the end
 	Router     router.Router
 	Out        io.Writer // progress output (stderr when JSON is set)
+
+	// Optional callbacks for a GUI; called from a background goroutine.
+	OnProgress func(Progress)       // once per second while traffic flows
+	OnStep     func(model.RampStep) // after each ramp step
 }
 
 // Defaults fills unset options with the documented defaults.
@@ -97,6 +103,8 @@ type session struct {
 	start time.Time
 	run   *model.Run
 	prior int64
+
+	curBitrate atomic.Uint64 // float64 bits: target of the segment currently running
 }
 
 func (s *session) out(format string, a ...any) { fmt.Fprintf(s.opt.Out, format, a...) }
@@ -242,6 +250,7 @@ func (s *session) segment(ctx context.Context, bitrate float64, dur time.Duratio
 	cfg.BitrateMbps = bitrate
 	cfg.DurationMs = dur.Milliseconds()
 	cfg.Seed = time.Now().UnixNano()
+	s.curBitrate.Store(math.Float64bits(bitrate))
 	res, err := s.ctl.RunSegment(ctx, cfg, stop, s.prior, s.opt.Budget)
 	if err != nil {
 		return nil, err
@@ -268,23 +277,39 @@ func (s *session) segment(ctx context.Context, bitrate float64, dur time.Duratio
 	return &s.run.Segments[len(s.run.Segments)-1], nil
 }
 
-// progress prints a line every interval while a segment runs.
-func (s *session) progress(ctx context.Context, every time.Duration, line func(elapsed time.Duration, st liveStats)) func() {
+// progress samples the receiver once per second while a test runs. Each
+// sample goes to Options.OnProgress; when printEvery > 0, the samples of each
+// printEvery period are merged into one terminal line.
+func (s *session) progress(ctx context.Context, printEvery time.Duration) func() {
 	pctx, cancel := context.WithCancel(ctx)
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
 		begin := time.Now()
-		t := time.NewTicker(every)
+		t := time.NewTicker(time.Second)
 		defer t.Stop()
+		var agg liveStats
+		n := 0
 		for {
 			select {
 			case <-pctx.Done():
 				return
 			case <-t.C:
 			}
-			ls := s.ctl.Recv.Live(s.opt.Budget, every)
-			line(time.Since(begin), liveStats{ls, s.ctl.LastRTT()})
+			ls := liveStats{s.ctl.Recv.Live(s.opt.Budget, time.Second), s.ctl.LastRTT()}
+			el := time.Since(begin)
+			if s.opt.OnProgress != nil {
+				s.opt.OnProgress(ls.progress(el, math.Float64frombits(s.curBitrate.Load())))
+			}
+			if printEvery <= 0 {
+				continue
+			}
+			agg.merge(ls)
+			if n++; time.Duration(n)*time.Second >= printEvery {
+				agg.Mbps /= float64(n)
+				s.out("%s\n", agg.line(el))
+				agg, n = liveStats{}, 0
+			}
 		}
 	}()
 	return func() { cancel(); <-done }
