@@ -1,0 +1,7 @@
+{
+  "name": "Periodic background scans every ~118 s",
+  "duration_s": 1200,
+  "periodic": {"first_s": 40, "every_s": 118, "jitter_s": 4, "dur_ms": 350, "kind": "delay"},
+  "at_each_stall": [{"kind": "event", "event": "scan_start", "offset_ms": -200}, {"kind": "event", "event": "scan_done", "offset_ms": 2500}],
+  "expect": {"top": "scan", "periodic": true, "stalls": 10, "min_share": 1}
+}

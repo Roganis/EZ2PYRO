@@ -1,0 +1,7 @@
+{
+  "name": "Short stalls with power save on",
+  "duration_s": 300,
+  "link": {"power_save": true},
+  "stalls": [{"at_s": 20, "dur_ms": 120}, {"at_s": 47, "dur_ms": 150}, {"at_s": 90, "dur_ms": 100}, {"at_s": 133, "dur_ms": 200}, {"at_s": 201, "dur_ms": 110}, {"at_s": 260, "dur_ms": 130}],
+  "expect": {"top": "powersave", "stalls": 6, "min_share": 1}
+}

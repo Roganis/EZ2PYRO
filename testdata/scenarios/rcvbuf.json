@@ -1,0 +1,7 @@
+{
+  "name": "Deck socket buffer overflows",
+  "duration_s": 300,
+  "stalls": [{"at_s": 40, "dur_ms": 300, "kind": "loss"}, {"at_s": 160, "dur_ms": 250, "kind": "loss"}, {"at_s": 280, "dur_ms": 300, "kind": "loss"}],
+  "at_each_stall": [{"kind": "rcvbuf", "offset_ms": 0, "value": 350}],
+  "expect": {"top": "rcvbuf", "stalls": 3, "min_share": 1}
+}

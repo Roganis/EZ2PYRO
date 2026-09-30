@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>linkdoctor compare — {{.NameA}} vs {{.NameB}}</title>
+<style>{{.UPlotCSS}}</style>
+<style>{{.StyleCSS}}</style>
+</head>
+<body>
+<main>
+<h1>Link Doctor comparison</h1>
+<p class="sub"><span class="key"><span class="swatch" style="background:var(--series-1)"></span><b>A</b> {{.NameA}} ({{.A.Options.Mode}}, {{f0 .A.Options.BitrateMbps}} Mbit/s)</span>
+ &nbsp;vs&nbsp; <span class="key"><span class="swatch" style="background:var(--series-2)"></span><b>B</b> {{.NameB}} ({{.B.Options.Mode}}, {{f0 .B.Options.BitrateMbps}} Mbit/s)</span></p>
+
+<section class="card tablewrap">
+<table>
+  <thead><tr><th></th><th class="num">A · {{.NameA}}</th><th class="num">B · {{.NameB}}</th><th>Change</th></tr></thead>
+  <tbody>
+  {{range .Rows}}<tr><td>{{.Label}}</td><td class="num">{{.A}}</td><td class="num">{{.B}}</td>
+  <td>{{if eq .Better 1}}<span class="status"><span class="dot" style="background:var(--good)"></span>{{.Delta}} better</span>{{else if eq .Better -1}}<span class="status"><span class="dot" style="background:var(--critical)"></span>{{.Delta}} worse</span>{{else}}<span class="muted">{{.Delta}}</span>{{end}}</td></tr>{{end}}
+  </tbody>
+</table>
+</section>
+
+<h2>Verdicts</h2>
+<section class="cols">
+  {{range $i, $r := (slice2 .A .B)}}
+  <div class="card"><div class="muted">{{if eq $i 0}}A{{else}}B{{end}}</div>
+    {{with $r.Verdicts}}{{with index . 0}}<div class="cause" style="font-weight:650;font-size:17px">{{.Cause}}</div><p>{{.Evidence}}</p><p class="muted">Fix: {{.Fix}}</p>{{end}}{{end}}
+  </div>
+  {{end}}
+</section>
+
+<h2>Over time (seconds from start)</h2>
+<section class="card chart-card">
+  <div class="hint">Drag to zoom both charts; double-click to reset.</div>
+  <div class="lane-title"><b>Late frames per second</b>
+    <span class="key"><span class="swatch" style="background:var(--series-1)"></span>A</span>
+    <span class="key"><span class="swatch" style="background:var(--series-2)"></span>B</span></div>
+  <div id="c-late"></div>
+  <div class="lane-title"><b>p99 frame delay per second</b>
+    <span class="key"><span class="swatch" style="background:var(--series-1)"></span>A</span>
+    <span class="key"><span class="swatch" style="background:var(--series-2)"></span>B</span></div>
+  <div id="c-p99"></div>
+</section>
+</main>
+<script>{{.UPlotJS}}</script>
+<script>
+(function () {
+  var D = {{.Data}};
+  var css = getComputedStyle(document.documentElement);
+  function v(n) { return css.getPropertyValue(n).trim(); }
+  var plots = [], syncing = false, font = "12px system-ui, sans-serif";
+  function mk(id, data, unit) {
+    var el = document.getElementById(id);
+    var p = new uPlot({
+      width: el.clientWidth, height: 200, legend: { show: false },
+      cursor: { y: false, sync: { key: "cmp" }, drag: { x: true, y: false } },
+      scales: { x: { time: false } },
+      axes: [{ stroke: v("--text-secondary"), grid: { stroke: v("--grid") }, font: font },
+             { stroke: v("--text-secondary"), grid: { stroke: v("--grid") }, font: font, size: 60, label: unit, labelSize: 18, labelFont: font }],
+      series: [{}, { label: "A", stroke: v("--series-1"), width: 2, points: { show: false } },
+                   { label: "B", stroke: v("--series-2"), width: 2, points: { show: false } }],
+      hooks: { setScale: [function (u, k) {
+        if (k !== "x" || syncing) return; syncing = true;
+        plots.forEach(function (q) { if (q !== u) q.setScale("x", { min: u.scales.x.min, max: u.scales.x.max }); });
+        syncing = false; }] },
+    }, data, el);
+    plots.push(p);
+  }
+  mk("c-late", D.late, "frames");
+  mk("c-p99", D.p99, "ms");
+  window.addEventListener("resize", function () {
+    plots.forEach(function (p) { p.setSize({ width: p.root.parentNode.clientWidth, height: 200 }); });
+  });
+})();
+</script>
+</body>
+</html>

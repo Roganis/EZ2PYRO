@@ -1,0 +1,7 @@
+{
+  "name": "Ramp: clean up to 250 Mbit/s",
+  "mode": "ramp",
+  "ramp_steps": [50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300],
+  "late_steps": [275, 300],
+  "expect": {"top": "capacity", "min_share": 1, "recommended_mbps": 175}
+}
